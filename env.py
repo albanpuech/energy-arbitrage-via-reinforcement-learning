@@ -68,7 +68,7 @@ class Battery(gym.Env):
             self.SOC[self.hour] = min(
                 1,  (self.SOC[self.hour-1]*self.NEC + self.E1H) / self.NEC)
             
-        self.schedule[self.hour] = (self.SOC[self.hour]-self.SOC[self.hour-1]) * self.NEC
+        self.schedule[self.hour-1] = (self.SOC[self.hour]-self.SOC[self.hour-1]) * self.NEC
 
         reward = (action-1) * \
             (self.mean_scaled_price[self.hour] - self.scaled_price[self.hour])
