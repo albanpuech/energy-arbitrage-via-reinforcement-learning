@@ -14,22 +14,20 @@ def get_dataset(path="data/european_wholesale_electricity_price_data_hourly.csv"
     df.rename({"Datetime (Local)": "timestamp",
                 "Price (EUR/MWhe)": "price"}, axis=1,inplace=True,errors="raise")
     df["timestamp"] = pd.to_datetime(df["timestamp"], format="%Y-%m-%dT%H:%M:%S")
-    df.price = df.price 
     df.reset_index(drop=True, inplace=True)
     return df
 
 
 class Battery(gym.Env):
 
-    def __init__(self, render_mode=None, df=None, k=5, NEC=10**5):
+    def __init__(self,  df,render_mode=None,k=5, NEC=10**5):
 
         self.NEC = NEC
         self.E1H = NEC/2
         self.k = k
-        self.df = df if len(df)>0 else get_dataset()
-        self.df["mean_price"] = self.df.price.rolling(self.k).mean()
-        self.price = self.df.price.to_numpy()
-        self.mean_price = self.df.mean_price.to_numpy()
+        self.df = df 
+        self.scaled_price = self.df.scaled_price.to_numpy()
+        self.mean_scaled_price = self.df.scaled_price.rolling(self.k).mean().to_numpy()
         self.n_hours = len(self.df)
         self.SOC = np.zeros(self.n_hours)
         self.schedule = np.zeros(self.n_hours)
@@ -40,7 +38,7 @@ class Battery(gym.Env):
         self.action_space = spaces.Discrete(3)
 
     def _get_obs(self):
-        return np.concatenate([self.price[self.hour-self.k+1:self.hour+1],
+        return np.concatenate([self.scaled_price[self.hour-self.k+1:self.hour+1],
                           self.SOC[self.hour-self.k:self.hour]])
 
     def _get_info(self):
@@ -73,7 +71,7 @@ class Battery(gym.Env):
         self.schedule[self.hour] = (self.SOC[self.hour]-self.SOC[self.hour-1]) * self.NEC
 
         reward = (action-1) * \
-            (self.mean_price[self.hour] - self.price[self.hour])
+            (self.mean_scaled_price[self.hour] - self.scaled_price[self.hour])
 
         self.hour += 1
         terminated = self.hour == self.n_hours
