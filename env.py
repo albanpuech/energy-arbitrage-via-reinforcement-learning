@@ -5,16 +5,22 @@ import numpy as np
 import pandas as pd 
 
 
-
-
+def get_dataset(path="data/european_wholesale_electricity_price_data_hourly.csv",country="Germany",use_cols=["Datetime (Local)","Price (EUR/MWhe)","Country"]) :
+    df = pd.read_csv(path)
+    df = df[df.Country==country]
+    df.drop(["Country"], axis=1,inplace=True)
+    df.rename({"Datetime (Local)":"timestamp", "Price (EUR/MWhe)":"price"},inplace=True)
+    df.price = df.price/ 10 **6 
+    return df
+    
 
 class GridWorldEnv(gym.Env):
 
-    def __init__(self, render_mode=None, k=5, NEC=10**5):
+    def __init__(self, render_mode=None,df=None, k=5, NEC=10**5):
         
         self.NEC = NEC
         self.E1H = NEC/2
-        self.df = pd.read_csv("dataset.csv")
+        self.df = df if df else get_dataset()
         self.n_hours = len(self.df)
         self.k = k
         self.SOC = np.zeros(self.n_hours)
