@@ -4,26 +4,28 @@ import numpy as np
 import pandas as pd
 
 
-def get_dataset(path="data/european_wholesale_electricity_price_data_hourly.csv", country="Germany", use_cols=["Datetime (Local)", "Price (EUR/MWhe)", "Country"]):
-    df = pd.read_csv(path)
+def get_dataset(path="data/european_wholesale_electricity_price_data_hourly.csv", year="2016",country="Germany", usecols=["Datetime (Local)", "Price (EUR/MWhe)", "Country"]):
+    df = pd.read_csv(path,usecols=usecols)
     df = df[df.Country == country]
+    df = df[df["Datetime (Local)"] > "2020-01-01 00:00:00"]
     df.drop(["Country"], axis=1, inplace=True)
     df.rename({"Datetime (Local)": "timestamp",
-              "Price (EUR/MWhe)": "price"}, inplace=True)
+                "Price (EUR/MWhe)": "price"}, axis=1,inplace=True,errors="raise")
     df.price = df.price / 10 ** 6
+    df = df.reset_index()
     return df
 
 
-class GridWorldEnv(gym.Env):
+class Battery(gym.Env):
 
     def __init__(self, render_mode=None, df=None, k=5, NEC=10**5):
 
         self.NEC = NEC
         self.E1H = NEC/2
-        self.df = df if df else get_dataset()
+        self.k = k
+        self.df = df if len(df)>0 else get_dataset()
         self.df["mean_price"] = self.df.price.rolling(self.k).mean()
         self.n_hours = len(self.df)
-        self.k = k
         self.SOC = np.zeros(self.n_hours)
 
         self.observation_space = spaces.Box(low=np.array([[0.0, -1] for i in range(
@@ -37,7 +39,7 @@ class GridWorldEnv(gym.Env):
                           self.SOC[self.hour-self.k:self.hour]])
 
     def _get_info(self):
-        return self.df[self.hour]
+        return None
 
     def reset(self, seed=None, options=None):
         self.hour = self.k
@@ -58,9 +60,12 @@ class GridWorldEnv(gym.Env):
             self.SOC[self.hour] = min(
                 1,  (self.SOC[self.hour-1]*self.NEC + self.E1H) / self.NEC)
 
-        reward = (self.action-1) * \
-            (self.df.mean_price[self.hour] - self.df.price[self.hour])
+        reward = (action-1) * \
+            (self.df.mean_price.loc[self.hour] - self.df.price.loc[self.hour])
 
         self.hour += 1
 
         return self._get_obs(), reward, (self.hour == self.n_hours)
+
+
+
