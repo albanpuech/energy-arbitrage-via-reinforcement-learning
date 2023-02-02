@@ -20,7 +20,8 @@ def get_dataset(
         inplace=True,
         errors="raise",
     )
-    df["timestamp"] = pd.to_datetime(df["timestamp"], format="%Y-%m-%dT%H:%M:%S")
+    df["timestamp"] = pd.to_datetime(
+        df["timestamp"], format="%Y-%m-%dT%H:%M:%S")
 
     if starttime:
         df = df[df["timestamp"] >= starttime]
@@ -30,17 +31,12 @@ def get_dataset(
     return df
 
 
-def add_derivatives(df, colname="price", nders=2, rolling_windows=None):
-    rolling_windows = rolling_windows if rolling_windows is not None else [5, 5]
-    df[f"{colname}_der1"] = (
-        df[colname]
-        .rolling(window=rolling_windows[0])
-        .apply(lambda x: x.iloc[0] - x.iloc[-1])
-    )
+def add_derivatives(df, colname="price", nders=2, rolling_windows=None, shift=0):
+    rolling_windows = rolling_windows if rolling_windows is not None else [
+        5, 5]
+    df[f"{colname}_der1"] = df[colname].shift(
+        shift) - df[colname].shift(rolling_windows[0]+shift)
     for i in range(2, nders + 1):
-        df[f"{colname}_der{i}"] = (
-            df[f"{colname}_der{i-1}"]
-            .rolling(window=rolling_windows[i - 1])
-            .apply(lambda x: x.iloc[0] - x.iloc[-1])
-        )
+        df[f"{colname}_der{i}"] = df[f"{colname}_der{i-1}"].shift(
+            shift) - df[f"{colname}_der{i-1}"].shift(rolling_windows[i-1]+shift)
     return df

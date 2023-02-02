@@ -9,7 +9,7 @@ from env import get_dataset as get_dataset
 class BatteryDiscrete(gym.Env):
     def __init__(
         self, df, render_mode=None, k=5, NEC=10**5, nbins=None, start_hour=0,
-        discrete_cols=None
+        discrete_cols=None, reward_function=None, price_bins=None
     ):
 
         self.NEC = NEC
@@ -29,6 +29,9 @@ class BatteryDiscrete(gym.Env):
         self.mean_scaled_price = self.df.scaled_price.rolling(
             self.k).mean().to_numpy()
 
+        self.price_bins = price_bins
+        self.buying_price = 0
+
         self.n_hours = len(self.df)
         self.SOC = np.zeros(self.n_hours, dtype=int)
         self.schedule = np.zeros(self.n_hours)
@@ -36,7 +39,10 @@ class BatteryDiscrete(gym.Env):
         # number of bins that the price, first derivative, and second derivative are divided into
         self.nbins = nbins if nbins is not None else [10, 10, 10]
         # additional 3 is for the state of charge which can be between 0, half full, or full (E1H = NEC/2)
-        self.observation_space = spaces.MultiDiscrete(list(self.nbins) + [3])
+        self.observation_space = spaces.MultiDiscrete(
+            list(self.nbins) + [len(self.price_bins) - 1, 3])
+
+        self.reward_function = reward_function
 
         # We have 3 actions, corresponding to "charge, hold, discharge"
         self.action_space = spaces.Discrete(3)
@@ -45,6 +51,8 @@ class BatteryDiscrete(gym.Env):
         obs = []
         for col in self.discrete_cols:
             obs.append(self.value_arrays[col][self.hour])
+
+        obs.append(np.argmax(self.buying_price > self.price_bins))
         obs.append(self.SOC[self.hour])
         return obs
 
@@ -62,23 +70,38 @@ class BatteryDiscrete(gym.Env):
 
         return observation
 
+    def _get_reward(self, action):
+        if self.reward_function is None:
+            return (action - 1) * (
+                self.mean_scaled_price[self.hour] -
+                self.scaled_price[self.hour]
+            )
+        return self.reward_function(self, action)
+
     def step(self, action):
         if action == 0:  # discharge
             self.SOC[self.hour] = max(0, (self.SOC[self.hour - 1] - 1))
+            if self.SOC[self.hour] == 0:
+                self.buying_price = 0
 
         elif action == 1:  # hold
             self.SOC[self.hour] = self.SOC[self.hour - 1]
 
         elif action == 2:  # charge
             self.SOC[self.hour] = min(2, (self.SOC[self.hour - 1] + 1))
+            if self.SOC[self.hour - 1] == 0:
+                self.buying_price = self.scaled_price[self.hour]
+            elif self.SOC[self.hour - 1] == 1:
+                self.buying_price = (self.buying_price +
+                                     self.scaled_price[self.hour])/2.0
+            else:
+                self.buying_price = self.buying_price
 
         self.schedule[self.hour - 1] = (
             (self.SOC[self.hour] - self.SOC[self.hour - 1]) * self.NEC / 2
         )
 
-        reward = (action - 1) * (
-            self.mean_scaled_price[self.hour] - self.scaled_price[self.hour]
-        )
+        reward = self._get_reward(action)
 
         self.hour += 1
         terminated = self.hour == self.n_hours
