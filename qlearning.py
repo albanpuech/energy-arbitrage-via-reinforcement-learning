@@ -5,17 +5,17 @@ import random
 
 class QLearning:
     def __init__(
-        self, env: gym.Env, state_shape, nactions, alpha=0.1, gamma=0.9, epsilon=0.1
+        self, env: gym.Env, discrete_cols,price_quantiles, nactions, alpha=0.1, gamma=0.9, epsilon=0.1
     ):
         self.env: gym.Env = env
-        self.state_shape = state_shape
+        self.state_shape = tuple([n_bin for (_,n_bin) in discrete_cols] + [len(price_quantiles) - 1]) + (nactions,)
         self.nactions = nactions
         self.alpha = alpha
         self.gamma = gamma
         self.epsilon = epsilon
 
         # initialize Q to zeros
-        self.Q = np.zeros(shape=tuple(list(state_shape) + [nactions]))
+        self.Q = np.zeros(shape=tuple(list(self.state_shape) + [nactions]))
 
     def learn(self, total_timesteps):
         state = self.env.reset()

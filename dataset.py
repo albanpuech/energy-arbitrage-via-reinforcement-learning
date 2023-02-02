@@ -31,12 +31,7 @@ def get_dataset(
     return df
 
 
-def add_derivatives(df, colname="price", nders=2, rolling_windows=None, shift=0):
-    rolling_windows = rolling_windows if rolling_windows is not None else [
-        5, 5]
-    df[f"{colname}_der1"] = df[colname].shift(
-        shift) - df[colname].shift(rolling_windows[0]+shift)
-    for i in range(2, nders + 1):
-        df[f"{colname}_der{i}"] = df[f"{colname}_der{i-1}"].shift(
-            shift) - df[f"{colname}_der{i-1}"].shift(rolling_windows[i-1]+shift)
+def add_derivatives(df, colname , output_col_name, rolling_windows=5, shift=0):
+    df[output_col_name] = df[colname].shift(shift) - df[colname].shift(rolling_windows+shift)
+    
     return df

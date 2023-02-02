@@ -8,8 +8,7 @@ from env import get_dataset as get_dataset
 
 class BatteryDiscrete(gym.Env):
     def __init__(
-        self, df, render_mode=None, k=5, NEC=10**5, nbins=None, start_hour=0,
-        discrete_cols=None, reward_function=None, price_bins=None
+        self, df, discrete_cols,render_mode=None, k=5, NEC=10**5, start_hour=0, reward_function=None, price_bins=None
     ):
 
         self.NEC = NEC
@@ -19,10 +18,9 @@ class BatteryDiscrete(gym.Env):
         self.start_hour = start_hour
 
         # discrete prices and its derivatives
-        self.discrete_cols = discrete_cols if discrete_cols is not None else [
-            "dprice", "dprice_der1", "dprice_der2"]
+        self.discrete_cols = discrete_cols 
         self.value_arrays = dict()
-        for col in self.discrete_cols:
+        for col,_ in self.discrete_cols :
             self.value_arrays[col] = self.df[col].to_numpy(dtype=int)
 
         self.scaled_price = self.df.scaled_price.to_numpy()
@@ -36,11 +34,10 @@ class BatteryDiscrete(gym.Env):
         self.SOC = np.zeros(self.n_hours, dtype=int)
         self.schedule = np.zeros(self.n_hours)
 
-        # number of bins that the price, first derivative, and second derivative are divided into
-        self.nbins = nbins if nbins is not None else [10, 10, 10]
+
         # additional 3 is for the state of charge which can be between 0, half full, or full (E1H = NEC/2)
         self.observation_space = spaces.MultiDiscrete(
-            list(self.nbins) + [len(self.price_bins) - 1, 3])
+            list([n_bin for (_,n_bin) in self.discrete_cols]) + [len(self.price_bins) - 1, 3])
 
         self.reward_function = reward_function
 
@@ -49,7 +46,7 @@ class BatteryDiscrete(gym.Env):
 
     def _get_obs(self):
         obs = []
-        for col in self.discrete_cols:
+        for col,_ in self.discrete_cols:
             obs.append(self.value_arrays[col][self.hour])
 
         obs.append(np.argmax(self.buying_price > self.price_bins))
