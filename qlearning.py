@@ -1,5 +1,6 @@
 import numpy as np
 import gym
+import random
 
 
 class QLearning:
@@ -21,11 +22,13 @@ class QLearning:
 
         for _ in range(total_timesteps):
             if np.random.random() < self.epsilon:
-                action = self.env.action_space.sample()
+                if state[2] == 0 : action = random.choice([1,2])
+                if state[2] == 2 : action = random.choice([0,1])
             else:
                 action = np.argmax(self.Q[self._get_index(state)])
 
             next_state, reward, terminated, _ = self.env.step(action)
+
 
             if terminated:
                 # reset and start again

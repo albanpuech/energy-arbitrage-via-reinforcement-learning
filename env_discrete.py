@@ -19,7 +19,7 @@ class BatteryDiscrete(gym.Env):
         self.nders = nders  # number of derivatives to consider
 
         # discrete prices and its derivatives
-        self.price = self.df.dprice.to_numpy(dtype=int)
+        self.price = self.df.price.to_numpy(dtype=int)
         self.price_der1 = self.df.dprice_der1.to_numpy(dtype=int)
         self.price_der2 = self.df.dprice_der2.to_numpy(dtype=int)
 
@@ -39,7 +39,7 @@ class BatteryDiscrete(gym.Env):
         self.action_space = spaces.Discrete(3)
 
     def _get_obs(self):
-        obs = [self.price[self.hour]]
+        obs = []
         if self.nders >= 1:
             obs.append(self.price_der1[self.hour])
         if self.nders >= 2:
@@ -62,14 +62,14 @@ class BatteryDiscrete(gym.Env):
         return observation
 
     def step(self, action):
-        if action == 0:
+        if action == 0: # discharge
             self.SOC[self.hour] = max(0, (self.SOC[self.hour - 1] - 1))
 
-        elif action == 1:
+        elif action == 1: # hold
             self.SOC[self.hour] = self.SOC[self.hour - 1]
 
-        elif action == 2:
-            self.SOC[self.hour] = min(1, (self.SOC[self.hour - 1] + 1))
+        elif action == 2: # charge
+            self.SOC[self.hour] = min(2, (self.SOC[self.hour - 1] + 1))
 
         self.schedule[self.hour - 1] = (
             (self.SOC[self.hour] - self.SOC[self.hour - 1]) * self.NEC / 2
