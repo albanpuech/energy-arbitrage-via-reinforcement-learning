@@ -8,7 +8,7 @@ from env import get_dataset as get_dataset
 
 class BatteryDiscrete(gym.Env):
     def __init__(
-        self, df, discrete_cols,render_mode=None, k=5, NEC=10**5, start_hour=0, reward_function=None, price_bins=None
+        self, df, discrete_cols,render_mode=None, k=3, NEC=10**5, start_hour=0, reward_function=None, price_bins=None
     ):
 
         self.NEC = NEC
@@ -100,9 +100,9 @@ class BatteryDiscrete(gym.Env):
 
         reward = self._get_reward(action)
 
-        self.hour += 1
-        terminated = self.hour == self.n_hours
+        terminated = self.hour == self.n_hours - 1
         obs = self._get_obs() if not terminated else None
+        self.hour += 1
 
         return obs, reward, terminated, {}
 

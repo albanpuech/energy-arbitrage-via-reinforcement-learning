@@ -16,6 +16,7 @@ class QLearning:
 
         # initialize Q to zeros
         self.Q = np.zeros(shape=tuple(list(self.state_shape) + [nactions]))
+        self.Q_update_count = np.zeros(shape=tuple(list(self.state_shape) + [nactions]))
 
     def learn(self, total_timesteps):
         state = self.env.reset()
@@ -24,8 +25,9 @@ class QLearning:
             if np.random.random() < self.epsilon:
                 if state[-1] == 0:
                     action = random.choice([1, 2])
-                if state[-1] == 2:
+                elif state[-1] == 2:
                     action = random.choice([0, 1])
+                else : action = self.env.action_space.sample()
             else:
                 action = np.random.choice(np.flatnonzero(self.Q[self._get_index(
                     state)] == np.max(self.Q[self._get_index(state)])))
@@ -43,13 +45,57 @@ class QLearning:
                 reward + self.gamma * next_max
             )
             # update Q matrix
+            self.Q_update_count[self._get_index(state, action)] +=1
             self.Q[self._get_index(state, action)] = new_value
 
             state = next_state
 
+
+
+    def learn_SARSA(self, total_timesteps):
+        state = self.env.reset()
+        action = random.choice([1, 2])
+        
+        for _ in range(total_timesteps):
+            
+
+            next_state, reward, terminated, _ = self.env.step(action)
+
+
+            if terminated:
+                # reset and start again
+                next_state = self.env.reset()
+                continue
+
+            if np.random.random() < self.epsilon:
+                if state[-1] == 0:
+                    next_action = random.choice([1, 2])
+                elif state[-1] == 2:
+                    next_action = random.choice([0, 1])
+                else : next_action = self.env.action_space.sample()
+            else:
+                next_action = np.random.choice(np.flatnonzero(self.Q[self._get_index(next_state)] == np.max(self.Q[self._get_index(next_state)])))
+
+
+
+
+            old_value = self.Q[self._get_index(state, action)]
+            new_value = (1 - self.alpha) * old_value + self.alpha * (
+                reward + self.gamma * self.Q[self._get_index(next_state,next_action)]
+            )
+            # update Q matrix
+            self.Q_update_count[self._get_index(state, action)] +=1
+            self.Q[self._get_index(state, action)] = new_value
+
+            state = next_state
+            action = next_action
+
+
+
     def predict(self, state, deterministic=False):
-        return np.random.choice(np.flatnonzero(self.Q[self._get_index(
+        action, states_ = np.random.choice(np.flatnonzero(self.Q[self._get_index(
             state)] == np.max(self.Q[self._get_index(state)]))), None
+        return action, states_
 
     def _get_index(self, state, action=None):
         if action is None:
