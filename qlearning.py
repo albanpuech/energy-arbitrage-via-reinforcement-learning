@@ -22,13 +22,15 @@ class QLearning:
 
         for _ in range(total_timesteps):
             if np.random.random() < self.epsilon:
-                if state[2] == 0 : action = random.choice([1,2])
-                if state[2] == 2 : action = random.choice([0,1])
+                if state[-1] == 0:
+                    action = random.choice([1, 2])
+                if state[-1] == 2:
+                    action = random.choice([0, 1])
             else:
-                action = np.argmax(self.Q[self._get_index(state)])
+                action = np.random.choice(np.flatnonzero(self.Q[self._get_index(
+                    state)] == np.max(self.Q[self._get_index(state)])))
 
             next_state, reward, terminated, _ = self.env.step(action)
-
 
             if terminated:
                 # reset and start again
@@ -46,7 +48,8 @@ class QLearning:
             state = next_state
 
     def predict(self, state, deterministic=False):
-        return np.argmax(self.Q[self._get_index(state)]), None
+        return np.random.choice(np.flatnonzero(self.Q[self._get_index(
+            state)] == np.max(self.Q[self._get_index(state)]))), None
 
     def _get_index(self, state, action=None):
         if action is None:

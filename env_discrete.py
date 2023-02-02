@@ -8,7 +8,8 @@ from env import get_dataset as get_dataset
 
 class BatteryDiscrete(gym.Env):
     def __init__(
-        self, df, render_mode=None, k=5, NEC=10**5, nbins=None, nders=0, start_hour=0
+        self, df, render_mode=None, k=5, NEC=10**5, nbins=None, start_hour=0,
+        discrete_cols=None
     ):
 
         self.NEC = NEC
@@ -16,34 +17,34 @@ class BatteryDiscrete(gym.Env):
         self.k = k
         self.df = df
         self.start_hour = start_hour
-        self.nders = nders  # number of derivatives to consider
 
         # discrete prices and its derivatives
-        self.price = self.df.price.to_numpy(dtype=int)
-        self.price_der1 = self.df.dprice_der1.to_numpy(dtype=int)
-        self.price_der2 = self.df.dprice_der2.to_numpy(dtype=int)
+        self.discrete_cols = discrete_cols if discrete_cols is not None else [
+            "dprice", "dprice_der1", "dprice_der2"]
+        self.value_arrays = dict()
+        for col in self.discrete_cols:
+            self.value_arrays[col] = self.df[col].to_numpy(dtype=int)
 
         self.scaled_price = self.df.scaled_price.to_numpy()
-        self.mean_scaled_price = self.df.scaled_price.rolling(self.k).mean().to_numpy()
+        self.mean_scaled_price = self.df.scaled_price.rolling(
+            self.k).mean().to_numpy()
 
         self.n_hours = len(self.df)
         self.SOC = np.zeros(self.n_hours, dtype=int)
         self.schedule = np.zeros(self.n_hours)
 
         # number of bins that the price, first derivative, and second derivative are divided into
-        self.nbins = nbins if nbins is not None else [10, 10, 1]
+        self.nbins = nbins if nbins is not None else [10, 10, 10]
         # additional 3 is for the state of charge which can be between 0, half full, or full (E1H = NEC/2)
-        self.observation_space = spaces.MultiDiscrete(self.nbins[: nders + 1] + [3])
+        self.observation_space = spaces.MultiDiscrete(list(self.nbins) + [3])
 
         # We have 3 actions, corresponding to "charge, hold, discharge"
         self.action_space = spaces.Discrete(3)
 
     def _get_obs(self):
         obs = []
-        if self.nders >= 1:
-            obs.append(self.price_der1[self.hour])
-        if self.nders >= 2:
-            obs.append(self.price_der2[self.hour])
+        for col in self.discrete_cols:
+            obs.append(self.value_arrays[col][self.hour])
         obs.append(self.SOC[self.hour])
         return obs
 
@@ -62,13 +63,13 @@ class BatteryDiscrete(gym.Env):
         return observation
 
     def step(self, action):
-        if action == 0: # discharge
+        if action == 0:  # discharge
             self.SOC[self.hour] = max(0, (self.SOC[self.hour - 1] - 1))
 
-        elif action == 1: # hold
+        elif action == 1:  # hold
             self.SOC[self.hour] = self.SOC[self.hour - 1]
 
-        elif action == 2: # charge
+        elif action == 2:  # charge
             self.SOC[self.hour] = min(2, (self.SOC[self.hour - 1] + 1))
 
         self.schedule[self.hour - 1] = (
