@@ -37,7 +37,7 @@ class BatteryDiscrete(gym.Env):
 
         # additional 3 is for the state of charge which can be between 0, half full, or full (E1H = NEC/2)
         self.observation_space = spaces.MultiDiscrete(
-            list([n_bin for (_,n_bin) in self.discrete_cols]) + [len(self.price_bins) - 1, 3])
+            list([n_bin for (_,n_bin) in self.discrete_cols]) + [3])
 
         self.reward_function = reward_function
 
@@ -49,7 +49,6 @@ class BatteryDiscrete(gym.Env):
         for col,_ in self.discrete_cols:
             obs.append(self.value_arrays[col][self.hour])
 
-        obs.append(np.argmax(self.buying_price > self.price_bins))
         obs.append(self.SOC[self.hour])
         return obs
 
@@ -110,7 +109,7 @@ class BatteryDiscrete(gym.Env):
 
         obs = self.reset()
         reward_list = []
-        for i in tqdm(range(len(self.df))):
+        for i in range(len(self.df)):
             action, _states = (
                 model.predict(obs, deterministic=True)
                 if model
