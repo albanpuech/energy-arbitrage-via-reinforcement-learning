@@ -27,6 +27,7 @@ class Battery(gym.Env):
         self.n_hours = len(self.df)
         self.SOC = np.zeros(self.n_hours)
         self.schedule = np.zeros(self.n_hours)
+        self.cash_in_hand = np.zeros(self.n_hours)
 
         # additional 3 is for the state of charge which can be between 0, half full, or full (E1H = NEC/2)
         self.observation_space = spaces.Box(low=np.array([-np.inf for _ in range(len(
@@ -54,14 +55,22 @@ class Battery(gym.Env):
 
     def reset(self, seed=None, options=None):
         self.hour = self.start_hour
+        self.SOC = np.zeros(self.n_hours)
+        self.schedule = np.zeros(self.n_hours)
+
+        self.buying_price = 0
+        self.cash_in_hand = np.zeros(self.n_hours)
         observation = self._get_obs()
         # info = self._get_info()
 
         return observation
 
+    def _get_valuation(self, hour):
+        return self.cash_in_hand[hour] + (self.SOC[hour] * self.df.price[hour])
+
     def _get_reward(self, action):
         if self.reward_function is None:
-            raise NotImplementedError
+            return self._get_valuation(self.hour) - self._get_valuation(self.hour - 1)
         return self.reward_function(self, action)
 
     def step(self, action):
@@ -86,6 +95,8 @@ class Battery(gym.Env):
         self.schedule[self.hour - 1] = (
             (self.SOC[self.hour] - self.SOC[self.hour - 1]) * self.NEC / 2
         )
+        self.cash_in_hand[self.hour] = self.cash_in_hand[self.hour - 1] - (
+            (self.SOC[self.hour] - self.SOC[self.hour - 1])*self.df.price[self.hour-1])
 
         reward = self._get_reward(action)
 
