@@ -90,13 +90,14 @@ class Battery(gym.Env):
                 self.buying_price = (self.buying_price +
                                      self.df.price[self.hour])/2.0
             else:
-                self.buying_price = self.buying_price
+                self.buying_price = self.buying_price      
 
         self.schedule[self.hour - 1] = (
             (self.SOC[self.hour] - self.SOC[self.hour - 1]) * self.NEC / 2
         )
         self.cash_in_hand[self.hour] = self.cash_in_hand[self.hour - 1] - (
-            (self.SOC[self.hour] - self.SOC[self.hour - 1])*self.df.price[self.hour-1])
+            (self.SOC[self.hour] - self.SOC[self.hour - 1])*self.df.price[self.hour-1]) - \
+            abs(self.SOC[self.hour] - self.SOC[self.hour - 1]) * self.df.vgc
 
         reward = self._get_reward(action)
 
