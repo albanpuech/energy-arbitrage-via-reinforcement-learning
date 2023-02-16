@@ -28,6 +28,7 @@ def get_dataset(
     if endtime:
         df = df[df["timestamp"] <= endtime]
     df.reset_index(drop=True, inplace=True)
+    df["vgc"] = 0
     return df
 
 

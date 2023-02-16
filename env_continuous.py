@@ -97,7 +97,7 @@ class Battery(gym.Env):
         )
         self.cash_in_hand[self.hour] = self.cash_in_hand[self.hour - 1] - (
             (self.SOC[self.hour] - self.SOC[self.hour - 1])*self.df.price[self.hour-1]) - \
-            abs(self.SOC[self.hour] - self.SOC[self.hour - 1]) * self.df.vgc
+            abs(self.SOC[self.hour] - self.SOC[self.hour - 1]) * self.df.vgc[self.hour-1]
 
         reward = self._get_reward(action)
 
