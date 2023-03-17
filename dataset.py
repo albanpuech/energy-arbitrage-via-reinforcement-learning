@@ -32,7 +32,16 @@ def get_dataset(
     return df
 
 
-def add_derivatives(df, colname , output_col_name, rolling_windows=5, shift=0):
-    df[output_col_name] = df[colname].shift(shift) - df[colname].shift(rolling_windows+shift)
-    
+def add_derivatives(df, colname, output_col_name, rolling_windows=5, shift=0):
+    df[output_col_name] = df[colname].shift(
+        shift) - df[colname].shift(rolling_windows+shift)
+
     return df
+
+
+def get_charge_cycles(df_optim):
+    return (df_optim.SOC - df_optim.SOC.shift(1)).abs().sum()/200
+
+
+def get_action_switches(df_optim):
+    return ((df_optim.SOC - df_optim.SOC.shift(1)) != (df_optim.SOC.shift(1) - df_optim.SOC.shift(2))).sum()
