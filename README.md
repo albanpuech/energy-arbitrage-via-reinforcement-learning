@@ -6,7 +6,7 @@ As the share of renewable energy sources increases in the electricity market, ne
 
 ## Data and training
 
-We use the data available from the European Hourly Day-Ahead Electricity Price [dataset](https://ember-climate.org/data-catalogue/european-wholesale-electricity-price-data/). This can be downloaded from [here](https://drive.google.com/file/d/1JPYYUoqVU-0NLB9bY6ElcZBqi67KKQ-I/view?usp=share_link).For training and evaluation, we use the pricing data from the years 2020-2022 in Germany. Data from 2021 is used for training, 2022 for testing and 2020 as the evaluation set.
+We use the data available from the European Hourly Day-Ahead Electricity Price [dataset](https://ember-climate.org/data-catalogue/european-wholesale-electricity-price-data/). This can be downloaded from [here](https://drive.google.com/file/d/1JPYYUoqVU-0NLB9bY6ElcZBqi67KKQ-I/view?usp=share_link). For training and evaluation, we use the pricing data from the years 2020-2022 in Germany. Data from 2021 is used for training, 2022 for testing and 2020 as the evaluation set.
 
 ## Project setup instructions
 
