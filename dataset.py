@@ -5,17 +5,17 @@ def get_dataset(
     path="data/european_wholesale_electricity_price_data_hourly.csv",
     year="2020",
     country="Germany",
-    usecols=["Datetime (Local)", "Price (EUR/MWhe)", "Country"],
+    usecols=["Datetime (UTC)", "Price (EUR/MWhe)", "Country"],
     starttime=None,
     endtime=None,
 ):
     df = pd.read_csv(path, usecols=usecols)
     df = df[df.Country == country]
     if year:
-        df = df[df["Datetime (Local)"] > f"{year}-01-01 00:00:00"]
+        df = df[df["Datetime (UTC)"] > f"{year}-01-01 00:00:00"]
     df.drop(["Country"], axis=1, inplace=True)
     df.rename(
-        {"Datetime (Local)": "timestamp", "Price (EUR/MWhe)": "price"},
+        {"Datetime (UTC)": "timestamp", "Price (EUR/MWhe)": "price"},
         axis=1,
         inplace=True,
         errors="raise",
